@@ -1,22 +1,53 @@
-#include <assert.h>
 #include <iostream>
+#include <cassert>
+
 using namespace std;
 
-bool batteryIsOk(float temperature, float soc, float chargeRate) {
-  if(temperature < 0 || temperature > 45) {
-    cout << "Temperature out of range!\n";
-    return false;
-  } else if(soc < 20 || soc > 80) {
-    cout << "State of Charge out of range!\n";
-    return false;
-  } else if(chargeRate > 0.8) {
-    cout << "Charge Rate out of range!\n";
-    return false;
-  }
-  return true;
-}
+class BatteryChecker {
+private:
+    float temperature;
+    float soc;
+    float chargeRate;
+
+public:
+    BatteryChecker(float temp, float soc, float chargeRate)
+        : temperature(temp), soc(soc), chargeRate(chargeRate) {}
+
+    bool isTemperatureOk() const {
+        return (temperature >= 0 && temperature <= 45);
+    }
+
+    bool isSOCOk() const {
+        return (soc >= 20 && soc <= 80);
+    }
+
+    bool isChargeRateOk() const {
+        return (chargeRate <= 0.8);
+    }
+
+    bool isBatteryOk() const {
+        return isTemperatureOk() && isSOCOk() && isChargeRateOk();
+    }
+
+    void printWarnings() const {
+        if (!isTemperatureOk()) {
+            cout << "Temperature out of range!\n";
+        }
+        if (!isSOCOk()) {
+            cout << "State of Charge out of range!\n";
+        }
+        if (!isChargeRateOk()) {
+            cout << "Charge Rate out of range!\n";
+        }
+    }
+};
 
 int main() {
-  assert(batteryIsOk(25, 70, 0.7) == true);
-  assert(batteryIsOk(50, 85, 0) == false);
+    BatteryChecker battery1(25, 70, 0.7);
+    assert(battery1.isBatteryOk() == true);
+    battery1.printWarnings();
+
+    BatteryChecker battery2(50, 85, 0);
+    assert(battery2.isBatteryOk() == false);
+    battery2.printWarnings();
 }
