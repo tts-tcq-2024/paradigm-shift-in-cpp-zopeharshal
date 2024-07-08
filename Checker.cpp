@@ -1,22 +1,67 @@
 #include <assert.h>
 #include <iostream>
 using namespace std;
-
-bool batteryIsOk(float temperature, float soc, float chargeRate) {
-  if(temperature < 0 || temperature > 45) {
-    cout << "Temperature out of range!\n";
-    return false;
-  } else if(soc < 20 || soc > 80) {
-    cout << "State of Charge out of range!\n";
-    return false;
-  } else if(chargeRate > 0.8) {
-    cout << "Charge Rate out of range!\n";
-    return false;
+ 
+enum class RangeStatus { OK, LOW, HIGH };
+ 
+RangeStatus checkRange(float value, float min, float max) {
+  if (value < min) {
+    return RangeStatus::LOW;
   }
-  return true;
+  if (value > max) {
+    return RangeStatus::HIGH;
+  }
+  return RangeStatus::OK;
 }
-
+ 
+RangeStatus checkTemperature(float temperature) {
+  return checkRange(temperature, 0, 45);
+}
+ 
+RangeStatus checkSoc(float soc) {
+  return checkRange(soc, 20, 80);
+}
+ 
+RangeStatus checkChargeRate(float chargeRate) {
+  return checkRange(chargeRate, 0, 0.8);
+}
+ 
+bool batteryIsOk(float temperature, float soc, float chargeRate) {
+  return checkTemperature(temperature) == RangeStatus::OK &&
+         checkSoc(soc) == RangeStatus::OK &&
+         checkChargeRate(chargeRate) == RangeStatus::OK;
+}
+ 
+void printStatusMessage(const char* parameterName, RangeStatus status) {
+  if (status == RangeStatus::LOW) {
+    cout << parameterName << " is too low!\n";
+  } else if (status == RangeStatus::HIGH) {
+    cout << parameterName << " is too high!\n";
+  }
+}
+ 
+void printTemperatureStatus(float temperature) {
+  printStatusMessage("Temperature", checkTemperature(temperature));
+}
+ 
+void printSocStatus(float soc) {
+  printStatusMessage("State of Charge", checkSoc(soc));
+}
+ 
+void printChargeRateStatus(float chargeRate) {
+  printStatusMessage("Charge Rate", checkChargeRate(chargeRate));
+}
+ 
+void printBatteryStatus(float temperature, float soc, float chargeRate) {
+  printTemperatureStatus(temperature);
+  printSocStatus(soc);
+  printChargeRateStatus(chargeRate);
+}
+ 
 int main() {
   assert(batteryIsOk(25, 70, 0.7) == true);
   assert(batteryIsOk(50, 85, 0) == false);
+ 
+  printBatteryStatus(25, 70, 0.7);  // Should print nothing
+  printBatteryStatus(50, 85, 0);    // Should print messages for temperature and soc
 }
