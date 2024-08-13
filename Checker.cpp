@@ -3,58 +3,75 @@ using namespace std;
 
 enum class RangeStatus { OK, LOW, HIGH, WARNING };
 
-// Generic function to check range and warning status
-RangeStatus checkRangeWithWarning(float value, float min, float max, float warningTolerance) {
-    if (value < min) {
+// Define a struct for parameters to improve clarity
+struct ParameterLimits {
+    float min;
+    float max;
+    float warningTolerance;
+};
+
+// Function to check the status of a value based on defined limits
+RangeStatus checkValue(float value, const ParameterLimits& limits) {
+    if (value < limits.min) {
         return RangeStatus::LOW;
     }
-    if (value > max) {
+    if (value > limits.max) {
         return RangeStatus::HIGH;
     }
-    if (value >= (max - warningTolerance) && value <= max) {
+    return RangeStatus::OK;
+}
+
+// Function to check for warning status
+RangeStatus checkWarning(float value, const ParameterLimits& limits) {
+    if (value < limits.min) {
+        return RangeStatus::LOW;
+    }
+    if (value > limits.max) {
+        return RangeStatus::HIGH;
+    }
+    if (value >= (limits.max - limits.warningTolerance)) {
         return RangeStatus::WARNING; // Approaching high limit
     }
-    if (value >= min && value <= (min + warningTolerance)) {
+    if (value <= (limits.min + limits.warningTolerance)) {
         return RangeStatus::WARNING; // Approaching low limit
     }
     return RangeStatus::OK;
 }
 
-// Range limits and tolerances for parameters
-const float TEMP_MIN = 0;
-const float TEMP_MAX = 45;
-const float TEMP_WARNING_TOLERANCE = 2.25; // 5% of 45
-
-const float SOC_MIN = 20;
-const float SOC_MAX = 80;
-const float SOC_WARNING_TOLERANCE = 4; // 5% of 80
-
-const float CHARGE_RATE_MIN = 0;
-const float CHARGE_RATE_MAX = 0.8;
-const float CHARGE_RATE_WARNING_TOLERANCE = 0.04; // 5% of 0.8
+// Define limits for each parameter
+const ParameterLimits TEMP_LIMITS = {0, 45, 2.25};   // 5% of 45
+const ParameterLimits SOC_LIMITS = {20, 80, 4};       // 5% of 80
+const ParameterLimits CHARGE_RATE_LIMITS = {0, 0.8, 0.04}; // 5% of 0.8
 
 bool batteryIsOk(float temperature, float soc, float chargeRate) {
-    return checkRangeWithWarning(temperature, TEMP_MIN, TEMP_MAX, TEMP_WARNING_TOLERANCE) == RangeStatus::OK &&
-           checkRangeWithWarning(soc, SOC_MIN, SOC_MAX, SOC_WARNING_TOLERANCE) == RangeStatus::OK &&
-           checkRangeWithWarning(chargeRate, CHARGE_RATE_MIN, CHARGE_RATE_MAX, CHARGE_RATE_WARNING_TOLERANCE) == RangeStatus::OK;
+    return checkValue(temperature, TEMP_LIMITS) == RangeStatus::OK &&
+           checkValue(soc, SOC_LIMITS) == RangeStatus::OK &&
+           checkValue(chargeRate, CHARGE_RATE_LIMITS) == RangeStatus::OK;
 }
 
-// Generic function to print status messages
-void printStatusMessage(const char* parameterName, RangeStatus status) {
-    if (status == RangeStatus::LOW) {
-        cout << parameterName << " is too low!\n";
-    } else if (status == RangeStatus::HIGH) {
-        cout << parameterName << " is too high!\n";
-    } else if (status == RangeStatus::WARNING) {
-        cout << parameterName << " is approaching limit!\n";
+// Function to print status messages based on range and warning checks
+void printStatusMessage(const char* parameterName, float value, const ParameterLimits& limits) {
+    RangeStatus status = checkWarning(value, limits);
+    switch (status) {
+        case RangeStatus::LOW:
+            cout << parameterName << " is too low!\n";
+            break;
+        case RangeStatus::HIGH:
+            cout << parameterName << " is too high!\n";
+            break;
+        case RangeStatus::WARNING:
+            cout << parameterName << " is approaching limit!\n";
+            break;
+        default:
+            break; // OK state does not require any output
     }
 }
 
 // Print status for all parameters
 void printBatteryStatus(float temperature, float soc, float chargeRate) {
-    printStatusMessage("Temperature", checkRangeWithWarning(temperature, TEMP_MIN, TEMP_MAX, TEMP_WARNING_TOLERANCE));
-    printStatusMessage("State of Charge", checkRangeWithWarning(soc, SOC_MIN, SOC_MAX, SOC_WARNING_TOLERANCE));
-    printStatusMessage("Charge Rate", checkRangeWithWarning(chargeRate, CHARGE_RATE_MIN, CHARGE_RATE_MAX, CHARGE_RATE_WARNING_TOLERANCE));
+    printStatusMessage("Temperature", temperature, TEMP_LIMITS);
+    printStatusMessage("State of Charge", soc, SOC_LIMITS);
+    printStatusMessage("Charge Rate", chargeRate, CHARGE_RATE_LIMITS);
 }
 
 int main() {
