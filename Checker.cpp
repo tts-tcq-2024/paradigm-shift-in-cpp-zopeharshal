@@ -1,23 +1,27 @@
 #include <assert.h>
 #include <iostream>
+#include <string>
 using namespace std;
 
 enum class RangeStatus { OK, LOW, HIGH, WARNING };
 
+// Function to check for status ranges
 RangeStatus checkRange(float value, float min, float max) {
     float warningTolerance = (max - min) * 0.05; // 5% tolerance
+
     if (value < min) {
         return RangeStatus::LOW;
     }
     if (value > max) {
         return RangeStatus::HIGH;
     }
-    if (value >= max - warningTolerance) {
-        return RangeStatus::WARNING; // Approaching upper limit
-    }
     if (value <= min + warningTolerance) {
         return RangeStatus::WARNING; // Approaching lower limit
     }
+    if (value >= max - warningTolerance) {
+        return RangeStatus::WARNING; // Approaching upper limit
+    }
+
     return RangeStatus::OK;
 }
 
@@ -39,43 +43,52 @@ bool batteryIsOk(float temperature, float soc, float chargeRate) {
            checkChargeRate(chargeRate) == RangeStatus::OK;
 }
 
-void printStatusMessage(const char* parameterName, RangeStatus status) {
-    if (status == RangeStatus::LOW) {
-        cout << parameterName << " is too low!\n";
-    } else if (status == RangeStatus::HIGH) {
-        cout << parameterName << " is too high!\n";
-    } else if (status == RangeStatus::WARNING) {
-        cout << parameterName << " is approaching limit!\n";
+// Function to get status messages based on parameter name and status
+string getStatusMessage(const string& parameterName, RangeStatus status, const string& language) {
+    if (language == "de") { // German
+        switch (status) {
+            case RangeStatus::LOW: return parameterName + " ist zu niedrig!";
+            case RangeStatus::HIGH: return parameterName + " ist zu hoch!";
+            case RangeStatus::WARNING: return parameterName + " erreicht die Grenze!";
+            default: return "";
+        }
+    } else { // English
+        switch (status) {
+            case RangeStatus::LOW: return parameterName + " is too low!";
+            case RangeStatus::HIGH: return parameterName + " is too high!";
+            case RangeStatus::WARNING: return parameterName + " is approaching limit!";
+            default: return "";
+        }
     }
 }
 
-void printTemperatureStatus(float temperature) {
-    printStatusMessage("Temperature", checkTemperature(temperature));
+// Simplified print function
+void printStatusMessage(const string& parameterName, RangeStatus status, const string& language) {
+    string message = getStatusMessage(parameterName, status, language);
+    if (!message.empty()) {
+        cout << message << "\n";
+    }
 }
 
-void printSocStatus(float soc) {
-    printStatusMessage("State of Charge", checkSoc(soc));
-}
-
-void printChargeRateStatus(float chargeRate) {
-    printStatusMessage("Charge Rate", checkChargeRate(chargeRate));
-}
-
-void printBatteryStatus(float temperature, float soc, float chargeRate) {
-    printTemperatureStatus(temperature);
-    printSocStatus(soc);
-    printChargeRateStatus(chargeRate);
+// Print battery status for all parameters
+void printBatteryStatus(float temperature, float soc, float chargeRate, const string& language) {
+    printStatusMessage("Temperature", checkTemperature(temperature), language);
+    printStatusMessage("State of Charge", checkSoc(soc), language);
+    printStatusMessage("Charge Rate", checkChargeRate(chargeRate), language);
 }
 
 int main() {
+    // Basic functional tests
     assert(batteryIsOk(25, 70, 0.7) == true);
     assert(batteryIsOk(50, 85, 0) == false);
     
-    printBatteryStatus(25, 70, 0.7);  // Should print nothing
-    printBatteryStatus(50, 85, 0);    // Should print messages for temperature and soc
-    
-    // Testing warnings
-    printBatteryStatus(42, 76, 0.75);  // Should print warnings for Temperature and State of Charge
-    printBatteryStatus(1, 19, 0.01);    // Should print warnings for Temperature and State of Charge
-}
+    // Testing warning messages in English
+    printBatteryStatus(42, 76, 0.75, "en"); 
+    printBatteryStatus(1, 19, 0.01, "en");   
 
+    // Testing warning messages in German
+    printBatteryStatus(42, 76, 0.75, "de"); 
+    printBatteryStatus(1, 19, 0.01, "de");  
+
+    return 0;
+}
