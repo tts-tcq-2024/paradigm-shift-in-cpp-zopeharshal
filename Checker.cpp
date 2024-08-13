@@ -27,8 +27,14 @@ const ParameterRange chargeRateRange = {0, 0.8, 0.04};  // 5% of 0.8
 RangeStatus checkRange(float value, const ParameterRange& range) {
     if (value < range.min) return RangeStatus::LOW;
     if (value > range.max) return RangeStatus::HIGH;
-    if (value <= (range.min + range.warningTolerance)) return RangeStatus::LOW_WARNING;
-    if (value >= (range.max - range.warningTolerance)) return RangeStatus::HIGH_WARNING;
+
+    // Check for warning levels
+    bool isLowWarning = (value <= (range.min + range.warningTolerance));
+    bool isHighWarning = (value >= (range.max - range.warningTolerance));
+
+    if (isLowWarning) return RangeStatus::LOW_WARNING;
+    if (isHighWarning) return RangeStatus::HIGH_WARNING;
+
     return RangeStatus::OK;
 }
 
