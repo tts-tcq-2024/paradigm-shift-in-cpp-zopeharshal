@@ -25,18 +25,10 @@ const ParameterRange chargeRateRange = {0, 0.8, 0.04};  // 5% of 0.8
 
 // Generic function to check range and return status
 RangeStatus checkRange(float value, const ParameterRange& range) {
-    if (value < range.min) {
-        return RangeStatus::LOW;
-    }
-    if (value > range.max) {
-        return RangeStatus::HIGH;
-    }
-    if (value >= (range.max - range.warningTolerance) && value <= range.max) {
-        return RangeStatus::HIGH_WARNING;
-    }
-    if (value >= range.min && value <= (range.min + range.warningTolerance)) {
-        return RangeStatus::LOW_WARNING;
-    }
+    if (value < range.min) return RangeStatus::LOW;
+    if (value > range.max) return RangeStatus::HIGH;
+    if (value <= (range.min + range.warningTolerance)) return RangeStatus::LOW_WARNING;
+    if (value >= (range.max - range.warningTolerance)) return RangeStatus::HIGH_WARNING;
     return RangeStatus::OK;
 }
 
@@ -61,55 +53,37 @@ bool batteryIsOk(float temperature, float soc, float chargeRate) {
 
 // Generic function to get status messages
 string getStatusMessage(const char* parameterName, RangeStatus status) {
-    unordered_map<RangeStatus, string> messages;
+    static unordered_map<RangeStatus, string> messagesEN = {
+        {RangeStatus::LOW, string(parameterName) + " is too low!"},
+        {RangeStatus::HIGH, string(parameterName) + " is too high!"},
+        {RangeStatus::LOW_WARNING, string(parameterName) + " is approaching discharge!"},
+        {RangeStatus::HIGH_WARNING, string(parameterName) + " is approaching charge-peak!"},
+        {RangeStatus::OK, ""}
+    };
 
-    if (currentLanguage == Language::ENGLISH) {
-        messages = {
-            {RangeStatus::LOW, string(parameterName) + " is too low!"},
-            {RangeStatus::HIGH, string(parameterName) + " is too high!"},
-            {RangeStatus::LOW_WARNING, string(parameterName) + " is approaching discharge!"},
-            {RangeStatus::HIGH_WARNING, string(parameterName) + " is approaching charge-peak!"},
-            {RangeStatus::OK, ""}
-        };
-    } else { // GERMAN
-        messages = {
-            {RangeStatus::LOW, string(parameterName) + " ist zu niedrig!"},
-            {RangeStatus::HIGH, string(parameterName) + " ist zu hoch!"},
-            {RangeStatus::LOW_WARNING, string(parameterName) + " nähert sich der Entladung!"},
-            {RangeStatus::HIGH_WARNING, string(parameterName) + " nähert sich dem Ladevorgang!"},
-            {RangeStatus::OK, ""}
-        };
-    }
+    static unordered_map<RangeStatus, string> messagesDE = {
+        {RangeStatus::LOW, string(parameterName) + " ist zu niedrig!"},
+        {RangeStatus::HIGH, string(parameterName) + " ist zu hoch!"},
+        {RangeStatus::LOW_WARNING, string(parameterName) + " nähert sich der Entladung!"},
+        {RangeStatus::HIGH_WARNING, string(parameterName) + " nähert sich dem Ladevorgang!"},
+        {RangeStatus::OK, ""}
+    };
 
-    return messages[status];
+    return (currentLanguage == Language::ENGLISH) ? messagesEN[status] : messagesDE[status];
 }
 
-// Specific status print functions using the generic function
-void printTemperatureStatus(float temperature) {
-    string message = getStatusMessage("Temperature", checkTemperature(temperature));
-    if (!message.empty()) {
-        cout << message << "\n";
-    }
-}
-
-void printSocStatus(float soc) {
-    string message = getStatusMessage("State of Charge", checkSoc(soc));
-    if (!message.empty()) {
-        cout << message << "\n";
-    }
-}
-
-void printChargeRateStatus(float chargeRate) {
-    string message = getStatusMessage("Charge Rate", checkChargeRate(chargeRate));
+// Unified status printing function
+void printStatus(const char* parameterName, RangeStatus status) {
+    string message = getStatusMessage(parameterName, status);
     if (!message.empty()) {
         cout << message << "\n";
     }
 }
 
 void printBatteryStatus(float temperature, float soc, float chargeRate) {
-    printTemperatureStatus(temperature);
-    printSocStatus(soc);
-    printChargeRateStatus(chargeRate);
+    printStatus("Temperature", checkTemperature(temperature));
+    printStatus("State of Charge", checkSoc(soc));
+    printStatus("Charge Rate", checkChargeRate(chargeRate));
 }
 
 int main() {
