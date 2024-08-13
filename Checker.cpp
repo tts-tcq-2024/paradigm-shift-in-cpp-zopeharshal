@@ -1,11 +1,12 @@
 #include <assert.h>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 using namespace std;
 
 enum class RangeStatus { OK, LOW, HIGH, WARNING };
 
-// Function to check for status ranges
+// Check range and return status
 RangeStatus checkRange(float value, float min, float max) {
     float warningTolerance = (max - min) * 0.05; // 5% tolerance
 
@@ -15,16 +16,14 @@ RangeStatus checkRange(float value, float min, float max) {
     if (value > max) {
         return RangeStatus::HIGH;
     }
-    if (value <= min + warningTolerance) {
-        return RangeStatus::WARNING; // Approaching lower limit
-    }
-    if (value >= max - warningTolerance) {
-        return RangeStatus::WARNING; // Approaching upper limit
+    if (value <= min + warningTolerance || value >= max - warningTolerance) {
+        return RangeStatus::WARNING; // Approaching limit
     }
 
     return RangeStatus::OK;
 }
 
+// Wrapper functions for specific checks
 RangeStatus checkTemperature(float temperature) {
     return checkRange(temperature, 0, 45);
 }
@@ -43,30 +42,27 @@ bool batteryIsOk(float temperature, float soc, float chargeRate) {
            checkChargeRate(chargeRate) == RangeStatus::OK;
 }
 
-// Function to get status messages based on parameter name and status
-string getStatusMessage(const string& parameterName, RangeStatus status, const string& language) {
+// Map status messages for different languages
+unordered_map<RangeStatus, string> getStatusMessages(const string& language) {
+    unordered_map<RangeStatus, string> messages;
     if (language == "de") { // German
-        switch (status) {
-            case RangeStatus::LOW: return parameterName + " ist zu niedrig!";
-            case RangeStatus::HIGH: return parameterName + " ist zu hoch!";
-            case RangeStatus::WARNING: return parameterName + " erreicht die Grenze!";
-            default: return "";
-        }
+        messages[RangeStatus::LOW] = " ist zu niedrig!";
+        messages[RangeStatus::HIGH] = " ist zu hoch!";
+        messages[RangeStatus::WARNING] = " erreicht die Grenze!";
     } else { // English
-        switch (status) {
-            case RangeStatus::LOW: return parameterName + " is too low!";
-            case RangeStatus::HIGH: return parameterName + " is too high!";
-            case RangeStatus::WARNING: return parameterName + " is approaching limit!";
-            default: return "";
-        }
+        messages[RangeStatus::LOW] = " is too low!";
+        messages[RangeStatus::HIGH] = " is too high!";
+        messages[RangeStatus::WARNING] = " is approaching limit!";
     }
+    return messages;
 }
 
 // Simplified print function
 void printStatusMessage(const string& parameterName, RangeStatus status, const string& language) {
-    string message = getStatusMessage(parameterName, status, language);
+    auto messages = getStatusMessages(language);
+    string message = messages[status];
     if (!message.empty()) {
-        cout << message << "\n";
+        cout << parameterName + message << "\n";
     }
 }
 
@@ -84,7 +80,7 @@ int main() {
     
     // Testing warning messages in English
     printBatteryStatus(42, 76, 0.75, "en"); 
-    printBatteryStatus(1, 19, 0.01, "en");   
+    printBatteryStatus(1, 19, 0.01, "en");  
 
     // Testing warning messages in German
     printBatteryStatus(42, 76, 0.75, "de"); 
